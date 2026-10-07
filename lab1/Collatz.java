@@ -6,7 +6,7 @@ public class Collatz {
     /** Buggy implementation of nextNumber! */
     // return a number of Collatz Sequnce
     public static int nextNumber(int n) {
-        if (n = 1) {
+        if (n == 1) {
             return 1;
         }
         if (n % 2 == 0) {
