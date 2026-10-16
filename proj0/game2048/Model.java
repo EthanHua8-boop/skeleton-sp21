@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author Altoswuel
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -106,12 +106,47 @@ public class Model extends Observable {
      *    value, then the leading two tiles in the direction of motion merge,
      *    and the trailing tile does not.
      * */
+
+
     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
+        Board b = this.board;
 
-        // TODO: Modify this.board (and perhaps this.score) to account
-        // for the tilt to the Side SIDE. If the board changed, set the
+
+        board.setViewingPerspective(side);
+        for (int col=0; col < b.size(); col++) {
+            // 跟踪变量，他会记录当前一列，最高能放在哪里
+            int top = b.size()-1;
+            for (int row=board.size()-2;row >=0;row--) {
+                // 要保证移动的砖块不为空
+                Tile moveboard = b.tile(col, row);
+                // 如果我要进行值的判断，首先应该确认，该点不为null
+                if (moveboard != null) {
+                    // 一个砖块和top的如果值相同融合，然后原top位置不能再被访问
+                    if (b.tile(col, top) != null) {
+                        if (moveboard.value() == b.tile(col, top).value()) {
+                            this.score += 2*b.tile(col, top).value();
+                            b.move(col, top, moveboard);
+                            // top的值如果小于0，就会超出限制？因为向下检索数量和场景砖块数量是一一对应的
+                            top = top - 1;
+                            changed = true;
+                        }
+                        else {
+                            top -= 1;
+                            b.move(col, top, moveboard);
+                            changed = true;
+                        }
+                    }
+                    else {
+                        b.move(col, top, moveboard);
+                        changed = true;
+                    }
+                }
+            }
+        }
+        board.setViewingPerspective(Side.NORTH);
+    // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
         checkGameOver();
@@ -136,8 +171,18 @@ public class Model extends Observable {
     /** Returns true if at least one space on the Board is empty.
      *  Empty spaces are stored as null.
      * */
+    /* 处理一个大型的项目,最重要的是做好抽象的屏障
+     * 对于所有人来说(包括自己),并不一定要了解所有的细节
+     * 但是只要抽象的屏障足够封装底层，就可以直接越过底层,在更高的层次上去编写功能                      */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        int boardsize = b.size();
+        for (int row = 0; row < boardsize; row++) {
+            for (int col = 0; col < boardsize; col++) {
+                    if (b.tile(col, row) == null) {
+                        return true;
+                    }
+                }
+            }
         return false;
     }
 
@@ -146,8 +191,22 @@ public class Model extends Observable {
      * Maximum valid value is given by MAX_PIECE. Note that
      * given a Tile object t, we get its value with t.value().
      */
+    /* 对于一个软件来说,测试是非常重要的
+        * 单元测试可以从基本的层面排查问题(查看测试报错,并且基于测试进行修改)
+        * 断点测试,即debugging(你可以逐行的查看运行效果定位问题)
+     */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int boardsize = b.size();
+        for (int row = 0; row < boardsize; row++) {
+            for (int col = 0; col < boardsize; col++) {
+                // 两个if不能写成一行,因为两个if都会判断导致报错结束运行
+                if (b.tile(col, row) != null) {
+                    if (b.tile(col, row).value() == Model.MAX_PIECE) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
@@ -157,11 +216,44 @@ public class Model extends Observable {
      * 1. There is at least one empty space on the board.
      * 2. There are two adjacent tiles with the same value.
      */
+    // 首先问题最好要分析清楚,要做好标注,做好抽象的屏障
+    // *不要过早抽象*！！！
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
+        int boardsize = b.size();
+        if (Model.emptySpaceExists(b)) {
+            return true;
+        }
+        else {
+            // col,row最大输入是boardsize-1,场景最大最大索引boardsize-1
+            // 先看测试,看测试是什么问题,可以通过debugging测具体的错位置
+            for (int row = 0; row < boardsize; row++) {
+                for (int col = 0; col < boardsize; col++) {
+                        // 判断是否场景位于最下方,但不含(boardsize-1, boardsize-1)
+                        if (col == boardsize - 1 & row != boardsize-1) {
+                            if (b.tile(col, row).value() == b.tile(col, row + 1).value()) {
+                                return true;
+                            }
+                        }
+                        // 判断是否位于场景最左,但不含(boardsize-1, boardsize-1)
+                        if (row == boardsize - 1 & col != boardsize-1) {
+                            if (b.tile(col, row).value() == b.tile(col + 1, row).value()) {
+                                return true;
+                            }
+                        }
+                        // 对于内层的情况
+                        else {
+                            if (row != boardsize-1 & col != boardsize-1) {
+                                if (b.tile(col, row).value() == b.tile(col+1, row).value() ||
+                                    b.tile(col, row).value() == b.tile(col, row+1).value()) {
+                                    return true;
+                                }
+                            }
+                        }
+                }
+            }
+        }
         return false;
     }
-
 
     @Override
      /** Returns the model as a string, used for debugging. */
