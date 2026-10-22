@@ -113,7 +113,6 @@ public class Model extends Observable {
         changed = false;
         Board b = this.board;
 
-
         board.setViewingPerspective(side);
         for (int col=0; col < b.size(); col++) {
             // 跟踪变量，他会记录当前一列，最高能放在哪里
